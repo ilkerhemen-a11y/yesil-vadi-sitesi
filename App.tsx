@@ -121,6 +121,7 @@ export default function App() {
     const amount = Number(paymentAmount.replace(",", "."));
     if (!paymentApartment || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Geçersiz tutar", "Sıfırdan büyük bir ödeme tutarı girin."); return; }
     setData(prev => ({ ...prev, payments: [...prev.payments, { id: Date.now().toString(), apartmentId: paymentApartment.id, month: selectedMonth, amount, date: new Date().toISOString().slice(0, 10) }] }));
+    appendAudit("Daire " + paymentApartment.id + " için " + money(amount) + " ödeme eklendi.");
     setPaymentApartment(null); setPaymentAmount("");
     Alert.alert("Ödeme kaydedildi", "Ödeme " + monthLabel(selectedMonth) + " dönemine eklendi.");
   };
@@ -136,13 +137,14 @@ export default function App() {
       return;
     }
     setData(prev => ({ ...prev, payments: prev.payments.map(p => p.id === editingPayment.id ? { ...p, amount, date: editPaymentDate } : p) }));
+    appendAudit("Daire " + editingPayment.apartmentId + " ödeme kaydı düzenlendi: " + money(amount) + ".");
     setEditingPayment(null);
     Alert.alert("Güncellendi", "Ödeme kaydı düzenlendi.");
   };
   const deletePayment = (payment: Payment) => {
     Alert.alert("Ödemeyi sil", "Bu ödeme kaydı kalıcı olarak silinsin mi?", [
       { text: "Vazgeç", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => setData(prev => ({ ...prev, payments: prev.payments.filter(p => p.id !== payment.id) })) }
+      { text: "Sil", style: "destructive", onPress: () => { setData(prev => ({ ...prev, payments: prev.payments.filter(p => p.id !== payment.id) })); appendAudit("Daire " + payment.apartmentId + " için " + money(payment.amount) + " ödeme kaydı silindi."); } }
     ]);
   };
   const openEditExpense = (expense: Expense) => {
