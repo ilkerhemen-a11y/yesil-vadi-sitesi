@@ -95,7 +95,9 @@ export default function App() {
   const monthRemaining = data.apartments.reduce((sum, a) => sum + Math.max(0, monthDues - Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - previousDues))), 0);
   const totalExpenses = data.expenses.reduce((sum, e) => sum + e.amount, 0);
   const monthExpenses = data.expenses.filter(e => e.date.slice(0, 7) === selectedMonth).reduce((sum, e) => sum + e.amount, 0);
-  const cashBalance = data.payments.reduce((sum, p) => sum + p.amount, 0) - totalExpenses;
+  const totalOtherIncome = (data.incomes || []).reduce((sum, i) => sum + i.amount, 0);
+  const openingBalance = Number(data.openingBalance) || 0;
+  const cashBalance = openingBalance + data.payments.reduce((sum, p) => sum + p.amount, 0) + totalOtherIncome - totalExpenses;
   const allDebt = data.apartments.reduce((sum, a) => sum + balanceFor(a.id, selectedMonth).debt, 0);
   const allCredit = data.apartments.reduce((sum, a) => sum + balanceFor(a.id, selectedMonth).credit, 0);
   const paidCount = data.apartments.filter(a => Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - previousDues)) >= monthDues && monthDues > 0).length;
