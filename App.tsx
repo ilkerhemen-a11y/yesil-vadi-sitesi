@@ -48,7 +48,8 @@ export default function App() {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.apartments) && parsed.duesByMonth && Array.isArray(parsed.payments)) {
-            setData(parsed as Store);
+            setData({ ...(parsed as Store), incomes: Array.isArray(parsed.incomes) ? parsed.incomes : [], openingBalance: Number(parsed.openingBalance) || 0 });
+            setOpeningBalanceInput(String(Number(parsed.openingBalance) || 0));
           } else {
             // Import earlier prototype data, preserving residents, expenses and recorded payments as far as possible.
             const legacyRaw = await AsyncStorage.getItem("yesil-vadi-sitesi-v1");
