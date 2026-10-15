@@ -4,13 +4,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Apartment = { id: number; resident: string };
 type Payment = { id: string; apartmentId: number; month: string; amount: number; date: string };
-type Expense = { id: string; title: string; amount: number; date: string };
+type Expense = { id: string; title: string; amount: number; date: string; category?: string };
 type OtherIncome = { id: string; title: string; amount: number; date: string };
 type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string; incomes?: OtherIncome[]; openingBalance?: number };
 type Tab = "home" | "apartments" | "expenses" | "settings";
 const STORAGE_KEY = "yesil-vadi-sitesi-v2";
 const monthNow = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
 const thisMonth = monthNow();
+const expenseCategories = ["Elektrik", "Su", "Temizlik", "Asansör", "Bahçe", "Tamirat", "Personel", "Yönetim", "Diğer"];
 const initialData: Store = {
   apartments: Array.from({ length: 20 }, (_, i) => ({ id: i + 1, resident: "" })),
   duesByMonth: { [thisMonth]: 600 }, payments: [], expenses: [], incomes: [], openingBalance: 0, startMonth: thisMonth
@@ -27,6 +28,7 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState(thisMonth);
   const [expenseTitle, setExpenseTitle] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("Diğer");
   const [incomeTitle, setIncomeTitle] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
   const [openingBalanceInput, setOpeningBalanceInput] = useState("0");
@@ -134,7 +136,7 @@ export default function App() {
   const addExpense = () => {
     const amount = Number(expenseAmount.replace(",", "."));
     if (!expenseTitle.trim() || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Bilgileri kontrol edin", "Gider adı ve sıfırdan büyük tutar girin."); return; }
-    setData(prev => ({ ...prev, expenses: [{ id: Date.now().toString(), title: expenseTitle.trim(), amount, date: new Date().toISOString().slice(0, 10) }, ...prev.expenses] }));
+    setData(prev => ({ ...prev, expenses: [{ id: Date.now().toString(), title: expenseTitle.trim(), amount, category: expenseCategory, date: new Date().toISOString().slice(0, 10) }, ...prev.expenses] }));
     setExpenseTitle(""); setExpenseAmount(""); Alert.alert("Kaydedildi", "Gider kaydı eklendi.");
   };
   const addIncome = () => {
