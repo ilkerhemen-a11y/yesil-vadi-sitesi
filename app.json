@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Yeşil Vadi Sitesi",
+    "slug": "yesil-vadi-sitesi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.yesilvadisitesi.app",
+      "versionCode": 1
+    },
+    "plugins": ["@react-native-async-storage/async-storage"]
+  }
+}
