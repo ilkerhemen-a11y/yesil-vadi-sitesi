@@ -2,14 +2,15 @@
 
 20 daireli site için çevrimdışı Android yönetim uygulaması.
 
-## İlk geliştirme sürümü
-- 20 daire için başlangıç listesi
-- Daire bazında sakin adı alanı
-- Daireye ödeme eklemek için Android uyumlu form
-- Aidat tahsilatı özeti ve kalan tutar görünümü
+## Mevcut ilk sürüm
+- 20 dairelik liste ve isteğe bağlı sakin adı
+- Ay seçerek aidat dönemleri arasında gezinme
+- Daire bazında seçili aya ödeme ekleme ve ödeme hareketlerini görüntüleme
+- Dönem bazında beklenen, tahsil edilen ve kalan aidat toplamları
+- Seçili aya kadar hesaplanan toplam kalan aidat
+- Aidat tutarını belirli bir aydan itibaren değiştirme; önceki dönemlerin tutarını koruma
 - Gider kaydı ve gider geçmişi
-- Aylık aidat tutarı ayarı
-- Verileri cihazda AsyncStorage ile saklama
+- AsyncStorage ile cihaz üzerinde yerel saklama
 
 ## Başlangıç değerleri
 - Daire sayısı: 20
@@ -28,5 +29,10 @@ EAS CLI ile giriş yaptıktan sonra:
 npx eas-cli build --platform android --profile preview
 ```
 
-## APK öncesi tamamlanması gerekenler
-Bu depo ilk uygulama iskeletidir; henüz test edilmiş veya yayımlanmış APK değildir. Ay bazında aidat geçmişi ve borç devri, ödeme hareketleri geçmişi, veri yedekleme/geri yükleme, giriş/doğrulama ve cihaz testleri tamamlanmalıdır. Aidat değişikliğinin geçmiş ay kayıtlarını etkilememesi özellikle sağlanmalıdır.
+## Henüz yapılmayanlar
+- Yedekleme ve geri yükleme (şimdilik kapsam dışında bırakıldı)
+- Kayıt düzenleme/silme ve ayrıntılı raporlar
+- Ödeme fazlasının sonraki aya aktarılması
+- Android cihazda gerçek test ve APK üretimi
+
+Not: Bu kod GitHub'a kaydedildi, ancak henüz derlenip cihazda test edilmiş bir APK değildir.
