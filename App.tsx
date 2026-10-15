@@ -6,7 +6,7 @@ type Apartment = { id: number; resident: string };
 type Payment = { id: string; apartmentId: number; month: string; amount: number; date: string };
 type Expense = { id: string; title: string; amount: number; date: string };
 type OtherIncome = { id: string; title: string; amount: number; date: string };
-type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string };
+type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string; incomes?: OtherIncome[]; openingBalance?: number };
 type Tab = "home" | "apartments" | "expenses" | "settings";
 const STORAGE_KEY = "yesil-vadi-sitesi-v2";
 const monthNow = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
