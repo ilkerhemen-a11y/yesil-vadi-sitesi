@@ -156,18 +156,20 @@ export default function App() {
       Alert.alert("Bilgileri kontrol edin", "Gider adı, pozitif tutar ve YYYY-AA-GG biçiminde tarih girin."); return;
     }
     setData(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === editingExpense.id ? { ...e, title: editExpenseTitle.trim(), amount, date: editExpenseDate } : e) }));
+    appendAudit("Gider kaydı düzenlendi: " + editExpenseTitle.trim() + " · " + money(amount) + ".");
     setEditingExpense(null); Alert.alert("Güncellendi", "Gider kaydı düzenlendi.");
   };
   const deleteExpense = (expense: Expense) => {
     Alert.alert("Gideri sil", "Bu gider kaydı silinsin mi?", [
       { text: "Vazgeç", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => setData(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== expense.id) })) }
+      { text: "Sil", style: "destructive", onPress: () => { setData(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== expense.id) })); appendAudit("Gider silindi: " + expense.title + " · " + money(expense.amount) + "."); } }
     ]);
   };
   const addExpense = () => {
     const amount = Number(expenseAmount.replace(",", "."));
     if (!expenseTitle.trim() || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Bilgileri kontrol edin", "Gider adı ve sıfırdan büyük tutar girin."); return; }
     setData(prev => ({ ...prev, expenses: [{ id: Date.now().toString(), title: expenseTitle.trim(), amount, category: expenseCategory, date: new Date().toISOString().slice(0, 10) }, ...prev.expenses] }));
+    appendAudit("Gider eklendi: " + expenseTitle.trim() + " · " + money(amount) + ".");
     setExpenseTitle(""); setExpenseAmount(""); Alert.alert("Kaydedildi", "Gider kaydı eklendi.");
   };
   const addIncome = () => {
@@ -200,7 +202,7 @@ export default function App() {
     if (!Number.isFinite(amount) || amount < 0) { Alert.alert("Geçersiz tutar", "Açılış kasa bakiyesi sıfır veya daha büyük olmalıdır."); return; }
     Alert.alert("Açılış bakiyesini kaydet", "Açılış kasası " + money(amount) + " olarak kaydedilecek.", [
       { text: "Vazgeç", style: "cancel" },
-      { text: "Kaydet", onPress: () => setData(prev => ({ ...prev, openingBalance: amount })) }
+      { text: "Kaydet", onPress: () => { setData(prev => ({ ...prev, openingBalance: amount })); appendAudit("Açılış kasa bakiyesi " + money(amount) + " olarak ayarlandı."); } }
     ]);
   };
   const saveDues = () => {
@@ -208,7 +210,7 @@ export default function App() {
     if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}$/.test(duesMonthInput)) { Alert.alert("Bilgileri kontrol edin", "Geçerli bir aidat tutarı ve YYYY-AA biçiminde başlangıç ayı girin."); return; }
     Alert.alert("Aidat değişikliğini onayla", monthLabel(duesMonthInput) + " döneminden itibaren aidat " + money(amount) + " olacak. Önceki dönemlerin tutarı korunacak.", [
       { text: "Vazgeç", style: "cancel" },
-      { text: "Uygula", onPress: () => setData(prev => ({ ...prev, duesByMonth: { ...prev.duesByMonth, [duesMonthInput]: amount } })) }
+      { text: "Uygula", onPress: () => { setData(prev => ({ ...prev, duesByMonth: { ...prev.duesByMonth, [duesMonthInput]: amount } })); appendAudit(monthLabel(duesMonthInput) + " itibarıyla aidat " + money(amount) + " olarak değiştirildi."); } }
     ]);
   };
   const header = (title: string, subtitle: string) => <View style={styles.header}><Text style={styles.brand}>YEŞİL VADİ SİTESİ</Text><Text style={styles.pageTitle}>{title}</Text><Text style={styles.subtitle}>{subtitle}</Text></View>;
