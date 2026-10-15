@@ -46,7 +46,7 @@ jobs:
         run: npm run typecheck
 
       - name: Generate native Android project
-        run: npx expo prebuild --platform android --non-interactive
+        run: CI=1 npx expo prebuild --platform android
 
       - name: Build release APK
         working-directory: android
