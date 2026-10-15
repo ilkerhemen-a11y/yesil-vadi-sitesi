@@ -213,6 +213,23 @@ export default function App() {
       { text: "Uygula", onPress: () => { setData(prev => ({ ...prev, duesByMonth: { ...prev.duesByMonth, [duesMonthInput]: amount } })); appendAudit(monthLabel(duesMonthInput) + " itibarıyla aidat " + money(amount) + " olarak değiştirildi."); } }
     ]);
   };
+  const statementEntries = statementApartment ? monthsBetween(data.startMonth, selectedMonth).flatMap(m => {
+    const monthlyPayments = data.payments
+      .filter(p => p.apartmentId === statementApartment.id && p.month === m)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return [
+      { id: "due-" + m, date: m + "-01", month: m, title: "Aylık aidat tahakkuku", amount: getDues(m), incoming: false },
+      ...monthlyPayments.map(p => ({ id: "payment-" + p.id, date: p.date, month: m, title: "Aidat ödemesi", amount: p.amount, incoming: true }))
+    ];
+  }).sort((a, b) => a.month.localeCompare(b.month) || a.date.localeCompare(b.date) || (a.incoming ? 1 : -1)).reduce((rows, entry) => {
+    const previous = rows.length ? rows[rows.length - 1].balance : 0;
+    const balance = previous + (entry.incoming ? -entry.amount : entry.amount);
+    rows.push({ ...entry, balance });
+    return rows;
+  }, [] as Array<{ id: string; date: string; month: string; title: string; amount: number; incoming: boolean; balance: number }>) : [];
+  const statementTotalDue = statementApartment ? duesThrough(selectedMonth) : 0;
+  const statementTotalPaid = statementApartment ? paidThrough(statementApartment.id, selectedMonth) : 0;
+  const statementBalance = statementTotalDue - statementTotalPaid;
   const header = (title: string, subtitle: string) => <View style={styles.header}><Text style={styles.brand}>YEŞİL VADİ SİTESİ</Text><Text style={styles.pageTitle}>{title}</Text><Text style={styles.subtitle}>{subtitle}</Text></View>;
   const monthPicker = <View style={styles.monthPicker}><TouchableOpacity style={styles.monthArrow} onPress={() => setSelectedMonth(m => shiftMonth(m, -1))}><Text style={styles.monthArrowText}>‹</Text></TouchableOpacity><Text style={styles.monthText}>{monthLabel(selectedMonth)}</Text><TouchableOpacity style={styles.monthArrow} onPress={() => setSelectedMonth(m => shiftMonth(m, 1))}><Text style={styles.monthArrowText}>›</Text></TouchableOpacity></View>;
 
@@ -267,7 +284,34 @@ export default function App() {
       <View style={styles.panel}><Text style={styles.panelTitle}>Uygulama bilgisi</Text><Text style={styles.muted}>• 20 daire tanımlıdır.</Text><Text style={styles.muted}>• Ödemeler ay bazında kaydedilir.</Text><Text style={styles.muted}>• Aidat değişikliği geçmiş ayların tutarını değiştirmez.</Text></View>
     </ScrollView>}
     {paymentApartment && <View style={styles.modalShade}><View style={styles.modalCard}><Text style={styles.panelTitle}>Daire {String(paymentApartment.id).padStart(2, "0")} · Ödeme ekle</Text><Text style={styles.muted}>Dönem: {monthLabel(selectedMonth)}</Text><Text style={styles.muted}>Bu ay şimdiye kadar: {money(paymentsFor(paymentApartment.id, selectedMonth))}</Text><TextInput style={styles.input} placeholder="Ödeme tutarı (TL)" keyboardType="decimal-pad" value={paymentAmount} onChangeText={setPaymentAmount} autoFocus /><TouchableOpacity style={styles.primaryButton} onPress={addPayment}><Text style={styles.primaryButtonText}>Ödemeyi kaydet</Text></TouchableOpacity><TouchableOpacity style={styles.cancelButton} onPress={() => setPaymentApartment(null)}><Text style={styles.cancelButtonText}>Vazgeç</Text></TouchableOpacity></View></View>}
-    {statementApartment && <View style={styles.modalShade}><View style={[styles.modalCard, styles.statementModal]}><Text style={styles.panelTitle}>Daire {String(statementApartment.id).padStart(2, "0")} · Hesap ekstresi</Text><Text style={styles.muted}>{statementApartment.resident.trim() || "Daire sakini belirtilmemiş"} · {monthLabel(selectedMonth)} dönemine kadar</Text><ScrollView style={styles.statementScroll} nestedScrollEnabled>{monthsBetween(data.startMonth, selectedMonth).map(m => { const due = getDues(m); const paid = paymentsFor(statementApartment.id, m); const monthlyBalance = balanceFor(statementApartment.id, m); return <View key={m} style={styles.statementRow}><View style={{ flex: 1 }}><Text style={styles.apartmentName}>{monthLabel(m)}</Text><Text style={styles.muted}>Aidat: {money(due)} · Ödeme: {money(paid)}</Text><Text style={styles.muted}>Dönem sonu borç: {money(monthlyBalance.debt)}{monthlyBalance.credit > 0 ? " · Alacak: " + money(monthlyBalance.credit) : ""}</Text></View><Text style={[styles.statementStatus, { color: monthlyBalance.debt === 0 ? "#166534" : "#b45309" }]}>{monthlyBalance.debt === 0 ? "Kapandı" : "Borçlu"}</Text></View>; })}</ScrollView><TouchableOpacity style={styles.primaryButton} onPress={() => setStatementApartment(null)}><Text style={styles.primaryButtonText}>Ekstreyi kapat</Text></TouchableOpacity></View></View>}
+    {statementApartment && <View style={styles.modalShade}><View style={[styles.modalCard, styles.statementModal]}>
+      <Text style={styles.panelTitle}>Daire {String(statementApartment.id).padStart(2, "0")} · Hesap ekstresi</Text>
+      <Text style={styles.muted}>{statementApartment.resident.trim() || "Daire sakini belirtilmemiş"} · {monthLabel(selectedMonth)} dönemine kadar</Text>
+      <View style={styles.statementTotals}>
+        <View style={styles.statementTotalBox}><Text style={styles.statementTotalLabel}>Toplam aidat</Text><Text style={styles.statementTotalValue}>{money(statementTotalDue)}</Text></View>
+        <View style={styles.statementTotalBox}><Text style={styles.statementTotalLabel}>Toplam ödeme</Text><Text style={styles.statementTotalValue}>{money(statementTotalPaid)}</Text></View>
+      </View>
+      <View style={styles.statementBalanceBox}>
+        <Text style={styles.statementTotalLabel}>{statementBalance > 0 ? "Kalan borç" : statementBalance < 0 ? "Fazla ödeme / alacak" : "Hesap durumu"}</Text>
+        <Text style={[styles.statementBalanceValue, { color: statementBalance > 0 ? "#b91c1c" : statementBalance < 0 ? "#2467b2" : "#16805d" }]}>{money(Math.abs(statementBalance))}{statementBalance === 0 ? " · Borç yok" : ""}</Text>
+      </View>
+      <Text style={styles.statementSectionTitle}>İşlem dökümü</Text>
+      <ScrollView style={styles.statementScroll} nestedScrollEnabled>
+        {statementEntries.length === 0 ? <Text style={styles.muted}>Bu dönem için henüz hesap hareketi yok.</Text> : statementEntries.map(entry => <View key={entry.id} style={styles.statementRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.apartmentName}>{entry.title}</Text>
+            <Text style={styles.muted}>{entry.date} · {monthLabel(entry.month)}</Text>
+            <Text style={[styles.statementAmount, { color: entry.incoming ? "#16805d" : "#b91c1c" }]}>{entry.incoming ? "− " : "+ "}{money(entry.amount)}</Text>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={styles.statementTotalLabel}>Bakiye</Text>
+            <Text style={[styles.statementRunningBalance, { color: entry.balance > 0 ? "#b91c1c" : entry.balance < 0 ? "#2467b2" : "#16805d" }]}>{money(Math.abs(entry.balance))}</Text>
+            <Text style={styles.statementStatus}>{entry.balance > 0 ? "Borç" : entry.balance < 0 ? "Alacak" : "Kapandı"}</Text>
+          </View>
+        </View>)}
+      </ScrollView>
+      <TouchableOpacity style={styles.primaryButton} onPress={() => setStatementApartment(null)}><Text style={styles.primaryButtonText}>Ekstreyi kapat</Text></TouchableOpacity>
+    </View></View>}
     {editingIncome && <View style={styles.modalShade}><View style={styles.modalCard}><Text style={styles.panelTitle}>Gelir kaydını düzenle</Text><Text style={styles.fieldLabel}>Gelir açıklaması</Text><TextInput style={styles.input} value={editIncomeTitle} onChangeText={setEditIncomeTitle} /><Text style={styles.fieldLabel}>Tutar (TL)</Text><TextInput style={styles.input} keyboardType="decimal-pad" value={editIncomeAmount} onChangeText={setEditIncomeAmount} /><Text style={styles.fieldLabel}>Tarih (YYYY-AA-GG)</Text><TextInput style={styles.input} value={editIncomeDate} onChangeText={setEditIncomeDate} placeholder="2026-10-15" /><TouchableOpacity style={styles.primaryButton} onPress={saveEditedIncome}><Text style={styles.primaryButtonText}>Değişiklikleri kaydet</Text></TouchableOpacity><TouchableOpacity style={styles.cancelButton} onPress={() => setEditingIncome(null)}><Text style={styles.cancelButtonText}>Vazgeç</Text></TouchableOpacity></View></View>}
     {editingExpense && <View style={styles.modalShade}><View style={styles.modalCard}><Text style={styles.panelTitle}>Gider kaydını düzenle</Text><Text style={styles.fieldLabel}>Gider açıklaması</Text><TextInput style={styles.input} value={editExpenseTitle} onChangeText={setEditExpenseTitle} /><Text style={styles.fieldLabel}>Tutar (TL)</Text><TextInput style={styles.input} keyboardType="decimal-pad" value={editExpenseAmount} onChangeText={setEditExpenseAmount} /><Text style={styles.fieldLabel}>Tarih (YYYY-AA-GG)</Text><TextInput style={styles.input} value={editExpenseDate} onChangeText={setEditExpenseDate} placeholder="2026-10-15" /><TouchableOpacity style={styles.primaryButton} onPress={saveEditedExpense}><Text style={styles.primaryButtonText}>Değişiklikleri kaydet</Text></TouchableOpacity><TouchableOpacity style={styles.cancelButton} onPress={() => setEditingExpense(null)}><Text style={styles.cancelButtonText}>Vazgeç</Text></TouchableOpacity></View></View>}
     {editingPayment && <View style={styles.modalShade}><View style={styles.modalCard}><Text style={styles.panelTitle}>Ödeme kaydını düzenle</Text><Text style={styles.muted}>Daire {String(editingPayment.apartmentId).padStart(2, "0")} · {monthLabel(editingPayment.month)}</Text><Text style={styles.fieldLabel}>Ödeme tutarı (TL)</Text><TextInput style={styles.input} keyboardType="decimal-pad" value={editPaymentAmount} onChangeText={setEditPaymentAmount} /><Text style={styles.fieldLabel}>Ödeme tarihi (YYYY-AA-GG)</Text><TextInput style={styles.input} value={editPaymentDate} onChangeText={setEditPaymentDate} placeholder="2026-10-15" autoCapitalize="none" /><TouchableOpacity style={styles.primaryButton} onPress={saveEditedPayment}><Text style={styles.primaryButtonText}>Değişiklikleri kaydet</Text></TouchableOpacity><TouchableOpacity style={styles.cancelButton} onPress={() => setEditingPayment(null)}><Text style={styles.cancelButtonText}>Vazgeç</Text></TouchableOpacity></View></View>}
@@ -308,7 +352,7 @@ const styles = StyleSheet.create({
  input: { backgroundColor: "#fafaff", borderWidth: 1, borderColor: "#e0e3f0", borderRadius: 12, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10, color: "#252b48" },
  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 2 }, due: { color: "#5145b8", fontWeight: "800" }, debtLine: { color: "#596178", fontSize: 12, marginTop: 8 },
  statementButton: { backgroundColor: "#f0efff", borderRadius: 11, padding: 11, alignItems: "center", marginTop: 12, borderWidth: 1, borderColor: "#d9d5ff" }, statementButtonText: { color: "#5145b8", fontWeight: "800" },
- statementModal: { maxHeight: "82%" }, statementScroll: { marginTop: 10, marginBottom: 12 }, statementRow: { flexDirection: "row", alignItems: "center", paddingVertical: 11, borderTopWidth: 1, borderTopColor: "#eff0f7", gap: 8 }, statementStatus: { fontSize: 11, fontWeight: "900" },
+ statementModal: { maxHeight: "88%" }, statementScroll: { marginTop: 8, marginBottom: 12 }, statementTotals: { flexDirection: "row", gap: 8, marginTop: 14 }, statementTotalBox: { flex: 1, backgroundColor: "#f7f7ff", borderRadius: 12, padding: 10, borderWidth: 1, borderColor: "#e7e9f2" }, statementTotalLabel: { color: "#737b91", fontSize: 11, fontWeight: "700" }, statementTotalValue: { color: "#252b48", fontSize: 14, fontWeight: "900", marginTop: 5 }, statementBalanceBox: { backgroundColor: "#f8fafc", borderRadius: 12, padding: 12, marginTop: 8, borderWidth: 1, borderColor: "#e7e9f2" }, statementBalanceValue: { fontSize: 20, fontWeight: "900", marginTop: 4 }, statementSectionTitle: { color: "#252b48", fontSize: 13, fontWeight: "900", marginTop: 15 }, statementRow: { flexDirection: "row", alignItems: "center", paddingVertical: 11, borderTopWidth: 1, borderTopColor: "#eff0f7", gap: 8 }, statementAmount: { fontSize: 12, fontWeight: "900", marginTop: 5 }, statementRunningBalance: { fontSize: 12, fontWeight: "900", marginTop: 3 }, statementStatus: { fontSize: 10, fontWeight: "900", marginTop: 2 },
  filterButton: { backgroundColor: "#f0efff", borderRadius: 10, padding: 12, alignItems: "center", borderWidth: 1, borderColor: "#d9d5ff" }, filterButtonText: { color: "#5145b8", fontWeight: "800" },
  smallButton: { backgroundColor: "#5b4dc8", borderRadius: 11, padding: 12, alignItems: "center", marginTop: 12 }, smallButtonText: { color: "#fff", fontWeight: "800" },
  history: { marginTop: 12, borderTopWidth: 1, borderTopColor: "#eff0f7", paddingTop: 8 }, historyTitle: { color: "#596178", fontWeight: "700", fontSize: 12 },
