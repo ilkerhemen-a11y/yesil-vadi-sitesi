@@ -28,6 +28,9 @@ export default function App() {
   const [expenseAmount, setExpenseAmount] = useState("");
   const [paymentApartment, setPaymentApartment] = useState<Apartment | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editPaymentAmount, setEditPaymentAmount] = useState("");
+  const [editPaymentDate, setEditPaymentDate] = useState("");
   const [duesInput, setDuesInput] = useState("600");
   const [duesMonthInput, setDuesMonthInput] = useState(thisMonth);
 
@@ -85,6 +88,27 @@ export default function App() {
     setPaymentApartment(null); setPaymentAmount("");
     Alert.alert("Ödeme kaydedildi", "Ödeme " + monthLabel(selectedMonth) + " dönemine eklendi.");
   };
+  const openEditPayment = (payment: Payment) => {
+    setEditingPayment(payment);
+    setEditPaymentAmount(String(payment.amount));
+    setEditPaymentDate(payment.date);
+  };
+  const saveEditedPayment = () => {
+    const amount = Number(editPaymentAmount.replace(",", "."));
+    if (!editingPayment || !Number.isFinite(amount) || amount <= 0 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(editPaymentDate)) {
+      Alert.alert("Bilgileri kontrol edin", "Pozitif bir tutar ve YYYY-AA-GG biçiminde geçerli tarih girin.");
+      return;
+    }
+    setData(prev => ({ ...prev, payments: prev.payments.map(p => p.id === editingPayment.id ? { ...p, amount, date: editPaymentDate } : p) }));
+    setEditingPayment(null);
+    Alert.alert("Güncellendi", "Ödeme kaydı düzenlendi.");
+  };
+  const deletePayment = (payment: Payment) => {
+    Alert.alert("Ödemeyi sil", "Bu ödeme kaydı kalıcı olarak silinsin mi?", [
+      { text: "Vazgeç", style: "cancel" },
+      { text: "Sil", style: "destructive", onPress: () => setData(prev => ({ ...prev, payments: prev.payments.filter(p => p.id !== payment.id) })) }
+    ]);
+  };
   const addExpense = () => {
     const amount = Number(expenseAmount.replace(",", "."));
     if (!expenseTitle.trim() || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Bilgileri kontrol edin", "Gider adı ve sıfırdan büyük tutar girin."); return; }
@@ -119,7 +143,7 @@ export default function App() {
         <View style={styles.row}><Text style={styles.muted}>Bu ay ödenen: {money(paid)}</Text><Text style={styles.due}>Bu ay kalan: {money(remaining)}</Text></View>
         <Text style={styles.debtLine}>Seçili aya kadar toplam kalan aidat: {money(debt)}</Text>
         <TouchableOpacity style={styles.smallButton} onPress={() => { setPaymentApartment(a); setPaymentAmount(""); }}><Text style={styles.smallButtonText}>Bu aya ödeme ekle</Text></TouchableOpacity>
-        {data.payments.filter(p => p.apartmentId === a.id && p.month === selectedMonth).length > 0 && <View style={styles.history}><Text style={styles.historyTitle}>Ödeme hareketleri</Text>{data.payments.filter(p => p.apartmentId === a.id && p.month === selectedMonth).map(p => <Text style={styles.muted} key={p.id}>{p.date} · {money(p.amount)}</Text>)}</View>}
+        {data.payments.filter(p => p.apartmentId === a.id && p.month === selectedMonth).length > 0 && <View style={styles.history}><Text style={styles.historyTitle}>Ödeme hareketleri</Text>{data.payments.filter(p => p.apartmentId === a.id && p.month === selectedMonth).map(p => <View style={styles.paymentHistoryRow} key={p.id}><View style={{ flex: 1 }}><Text style={styles.muted}>{p.date}</Text><Text style={styles.paymentAmount}>{money(p.amount)}</Text></View><TouchableOpacity style={styles.editButton} onPress={() => openEditPayment(p)}><Text style={styles.editButtonText}>Düzenle</Text></TouchableOpacity><TouchableOpacity style={styles.deleteButton} onPress={() => deletePayment(p)}><Text style={styles.deleteButtonText}>Sil</Text></TouchableOpacity></View>)}</View>}
       </View>; })}
     </ScrollView>}
     {tab === "expenses" && <ScrollView contentContainerStyle={styles.content}>{header("Gelir / gider", "Site harcamalarını kaydet ve takip et")}
@@ -132,6 +156,7 @@ export default function App() {
       <View style={styles.panel}><Text style={styles.panelTitle}>Uygulama bilgisi</Text><Text style={styles.muted}>• 20 daire tanımlıdır.</Text><Text style={styles.muted}>• Ödemeler ay bazında kaydedilir.</Text><Text style={styles.muted}>• Aidat değişikliği geçmiş ayların tutarını değiştirmez.</Text></View>
     </ScrollView>}
     {paymentApartment && <View style={styles.modalShade}><View style={styles.modalCard}><Text style={styles.panelTitle}>Daire {String(paymentApartment.id).padStart(2, "0")} · Ödeme ekle</Text><Text style={styles.muted}>Dönem: {monthLabel(selectedMonth)}</Text><Text style={styles.muted}>Bu ay şimdiye kadar: {money(paymentsFor(paymentApartment.id, selectedMonth))}</Text><TextInput style={styles.input} placeholder="Ödeme tutarı (TL)" keyboardType="decimal-pad" value={paymentAmount} onChangeText={setPaymentAmount} autoFocus /><TouchableOpacity style={styles.primaryButton} onPress={addPayment}><Text style={styles.primaryButtonText}>Ödemeyi kaydet</Text></TouchableOpacity><TouchableOpacity style={styles.cancelButton} onPress={() => setPaymentApartment(null)}><Text style={styles.cancelButtonText}>Vazgeç</Text></TouchableOpacity></View></View>}
+    {editingPayment && <View style={styles.modalShade}><View style={styles.modalCard}><Text style={styles.panelTitle}>Ödeme kaydını düzenle</Text><Text style={styles.muted}>Daire {String(editingPayment.apartmentId).padStart(2, "0")} · {monthLabel(editingPayment.month)}</Text><Text style={styles.fieldLabel}>Ödeme tutarı (TL)</Text><TextInput style={styles.input} keyboardType="decimal-pad" value={editPaymentAmount} onChangeText={setEditPaymentAmount} /><Text style={styles.fieldLabel}>Ödeme tarihi (YYYY-AA-GG)</Text><TextInput style={styles.input} value={editPaymentDate} onChangeText={setEditPaymentDate} placeholder="2026-10-15" autoCapitalize="none" /><TouchableOpacity style={styles.primaryButton} onPress={saveEditedPayment}><Text style={styles.primaryButtonText}>Değişiklikleri kaydet</Text></TouchableOpacity><TouchableOpacity style={styles.cancelButton} onPress={() => setEditingPayment(null)}><Text style={styles.cancelButtonText}>Vazgeç</Text></TouchableOpacity></View></View>}
     <View style={styles.nav}><NavItem label="Ana sayfa" icon="⌂" active={tab === "home"} onPress={() => setTab("home")} /><NavItem label="Daireler" icon="▦" active={tab === "apartments"} onPress={() => setTab("apartments")} /><NavItem label="Giderler" icon="₺" active={tab === "expenses"} onPress={() => setTab("expenses")} /><NavItem label="Ayarlar" icon="⚙" active={tab === "settings"} onPress={() => setTab("settings")} /></View>
   </SafeAreaView>;
 }
@@ -146,6 +171,7 @@ const styles = StyleSheet.create({
  panel: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 13, borderWidth: 1, borderColor: "#e2e8e2" }, panelTitle: { color: "#172b20", fontSize: 16, fontWeight: "800", marginBottom: 12 }, bigNumber: { fontSize: 27, fontWeight: "800", color: "#14532d", marginBottom: 4 }, muted: { color: "#64748b", fontSize: 12, marginTop: 4 }, track: { height: 8, backgroundColor: "#e2e8e2", borderRadius: 9, overflow: "hidden", marginTop: 14 }, progress: { height: 8, backgroundColor: "#16a34a", borderRadius: 9 },
  action: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, borderTopWidth: 1, borderTopColor: "#edf2ed" }, actionText: { color: "#166534", fontWeight: "700", fontSize: 14 }, actionArrow: { color: "#16a34a", fontSize: 25 },
  apartment: { backgroundColor: "#fff", borderRadius: 15, padding: 14, marginBottom: 11, borderWidth: 1, borderColor: "#e2e8e2" }, apartmentTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }, apartmentName: { color: "#172b20", fontWeight: "800", fontSize: 15 }, badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, overflow: "hidden", fontSize: 11, fontWeight: "800" }, input: { backgroundColor: "#f8faf8", borderWidth: 1, borderColor: "#dbe5db", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 9, color: "#172b20" }, row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 2 }, due: { color: "#166534", fontWeight: "800" }, debtLine: { color: "#475569", fontSize: 12, marginTop: 8 }, smallButton: { backgroundColor: "#166534", borderRadius: 9, padding: 10, alignItems: "center", marginTop: 12 }, smallButtonText: { color: "#fff", fontWeight: "800" }, history: { marginTop: 12, borderTopWidth: 1, borderTopColor: "#edf2ed", paddingTop: 8 }, historyTitle: { color: "#334155", fontWeight: "700", fontSize: 12 },
+ paymentHistoryRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#edf2ed" }, paymentAmount: { color: "#166534", fontWeight: "800", marginTop: 2 }, editButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 7, backgroundColor: "#e0f2fe" }, editButtonText: { color: "#075985", fontSize: 11, fontWeight: "800" }, deleteButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 7, backgroundColor: "#fee2e2" }, deleteButtonText: { color: "#b91c1c", fontSize: 11, fontWeight: "800" },
  primaryButton: { backgroundColor: "#166534", padding: 13, borderRadius: 10, alignItems: "center", marginTop: 2 }, primaryButtonText: { color: "#fff", fontWeight: "800" }, fieldLabel: { color: "#334155", fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 8 }, listRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#edf2ed" },
  modalShade: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "center", padding: 20 }, modalCard: { backgroundColor: "#fff", borderRadius: 18, padding: 18, elevation: 8 }, cancelButton: { padding: 12, alignItems: "center", marginTop: 4 }, cancelButtonText: { color: "#64748b", fontWeight: "700" },
  nav: { flexDirection: "row", backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#dbe5db", paddingTop: 9, paddingBottom: 8, justifyContent: "space-around" }, navItem: { alignItems: "center", minWidth: 62 }, navIcon: { fontSize: 20, color: "#64748b" }, navLabel: { color: "#64748b", fontSize: 10, marginTop: 2 }, navActive: { color: "#166534", fontWeight: "900" }
