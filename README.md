@@ -8,6 +8,10 @@
 - Daire bazında seçili aya ödeme ekleme
 - Ödeme hareketlerini görüntüleme, tutar/tarih düzenleme ve kaydı silme
 - Dönem bazında beklenen, tahsil edilen ve kalan aidat toplamları
+- Önceki dönemlerden devreden borçların kümülatif hesabı
+- Toplam fazla ödeme/alacak bakiyesi
+- Ödemelerin birikmiş eski borçları önce kapatacak şekilde bakiye hesabı
+- Seçili ay için tahsilat, gider ve net nakit akışı raporu
 - Seçili aya kadar kalan aidat borçlarının özeti
 - Aidat tutarını belirli bir aydan itibaren değiştirme; önceki dönemlerin tutarını koruma
 - Gider kaydı ve gider geçmişi
@@ -31,7 +35,7 @@ npx eas-cli build --platform android --profile preview
 ```
 
 ## Sonraki işler
-- Borç devri ve fazla ödemenin sonraki aylara uygulanması için ayrıntılı muhasebe mantığı
+- Borç devri ve fazla ödeme hesaplarının farklı senaryolarla test edilmesi
 - Gider kayıtlarını düzenleme/silme
 - Aylık gelir-gider raporları
 - Yedekleme/geri yükleme (şimdilik bekletiliyor)
