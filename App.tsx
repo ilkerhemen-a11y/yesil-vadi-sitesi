@@ -129,7 +129,7 @@ export default function App() {
   };
   const saveEditedPayment = () => {
     const amount = Number(editPaymentAmount.replace(",", "."));
-    if (!editingPayment || !Number.isFinite(amount) || amount <= 0 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(editPaymentDate)) {
+    if (!editingPayment || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(editPaymentDate)) {
       Alert.alert("Bilgileri kontrol edin", "Pozitif bir tutar ve YYYY-AA-GG biçiminde geçerli tarih girin.");
       return;
     }
@@ -148,7 +148,7 @@ export default function App() {
   };
   const saveEditedExpense = () => {
     const amount = Number(editExpenseAmount.replace(",", "."));
-    if (!editingExpense || !editExpenseTitle.trim() || !Number.isFinite(amount) || amount <= 0 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(editExpenseDate)) {
+    if (!editingExpense || !editExpenseTitle.trim() || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(editExpenseDate)) {
       Alert.alert("Bilgileri kontrol edin", "Gider adı, pozitif tutar ve YYYY-AA-GG biçiminde tarih girin."); return;
     }
     setData(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === editingExpense.id ? { ...e, title: editExpenseTitle.trim(), amount, date: editExpenseDate } : e) }));
@@ -177,7 +177,7 @@ export default function App() {
   };
   const saveEditedIncome = () => {
     const amount = Number(editIncomeAmount.replace(",", "."));
-    if (!editingIncome || !editIncomeTitle.trim() || !Number.isFinite(amount) || amount <= 0 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(editIncomeDate)) {
+    if (!editingIncome || !editIncomeTitle.trim() || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(editIncomeDate)) {
       Alert.alert("Bilgileri kontrol edin", "Gelir açıklaması, pozitif tutar ve YYYY-AA-GG biçiminde tarih girin."); return;
     }
     setData(prev => ({ ...prev, incomes: (prev.incomes || []).map(i => i.id === editingIncome.id ? { ...i, title: editIncomeTitle.trim(), amount, date: editIncomeDate } : i) }));
