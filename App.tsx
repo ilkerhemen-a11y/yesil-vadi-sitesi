@@ -174,6 +174,7 @@ export default function App() {
     const amount = Number(incomeAmount.replace(",", "."));
     if (!incomeTitle.trim() || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Bilgileri kontrol edin", "Gelir açıklaması ve sıfırdan büyük tutar girin."); return; }
     setData(prev => ({ ...prev, incomes: [{ id: Date.now().toString(), title: incomeTitle.trim(), amount, date: new Date().toISOString().slice(0, 10) }, ...(prev.incomes || [])] }));
+    appendAudit("Diğer gelir eklendi: " + incomeTitle.trim() + " · " + money(amount) + ".");
     setIncomeTitle(""); setIncomeAmount(""); Alert.alert("Kaydedildi", "Diğer gelir kaydı eklendi.");
   };
   const openEditIncome = (income: OtherIncome) => {
@@ -185,12 +186,13 @@ export default function App() {
       Alert.alert("Bilgileri kontrol edin", "Gelir açıklaması, pozitif tutar ve YYYY-AA-GG biçiminde tarih girin."); return;
     }
     setData(prev => ({ ...prev, incomes: (prev.incomes || []).map(i => i.id === editingIncome.id ? { ...i, title: editIncomeTitle.trim(), amount, date: editIncomeDate } : i) }));
+    appendAudit("Diğer gelir kaydı düzenlendi: " + editIncomeTitle.trim() + " · " + money(amount) + ".");
     setEditingIncome(null); Alert.alert("Güncellendi", "Gelir kaydı düzenlendi.");
   };
   const deleteIncome = (income: OtherIncome) => {
     Alert.alert("Geliri sil", "Bu gelir kaydı silinsin mi?", [
       { text: "Vazgeç", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => setData(prev => ({ ...prev, incomes: (prev.incomes || []).filter(i => i.id !== income.id) })) }
+      { text: "Sil", style: "destructive", onPress: () => { setData(prev => ({ ...prev, incomes: (prev.incomes || []).filter(i => i.id !== income.id) })); appendAudit("Diğer gelir silindi: " + income.title + " · " + money(income.amount) + "."); } }
     ]);
   };
   const saveOpeningBalance = () => {
