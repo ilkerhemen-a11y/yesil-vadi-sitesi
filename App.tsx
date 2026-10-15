@@ -109,6 +109,8 @@ export default function App() {
   const openingBalance = Number(data.openingBalance) || 0;
   const cashBalance = openingBalance + data.payments.reduce((sum, p) => sum + p.amount, 0) + totalOtherIncome - totalExpenses;
   const allDebt = data.apartments.reduce((sum, a) => sum + balanceFor(a.id, selectedMonth).debt, 0);
+  const debtorCount = data.apartments.filter(a => balanceFor(a.id, selectedMonth).debt > 0).length;
+  const monthOtherIncome = (data.incomes || []).filter(i => i.date.slice(0, 7) === selectedMonth).reduce((sum, i) => sum + i.amount, 0);
   const allCredit = data.apartments.reduce((sum, a) => sum + balanceFor(a.id, selectedMonth).credit, 0);
   const paidCount = data.apartments.filter(a => Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - previousDues)) >= monthDues && monthDues > 0).length;
 
@@ -211,7 +213,7 @@ export default function App() {
     {tab === "home" && <ScrollView contentContainerStyle={styles.content}>
       {header("Yönetim paneli", "Site gelir ve aidat özeti")}{monthPicker}
       <View style={styles.panel}><Text style={styles.panelTitle}>Güncel kasa bakiyesi</Text><Text style={styles.bigNumber}>{money(cashBalance)}</Text><Text style={styles.muted}>Açılış bakiyesi + aidat tahsilatları + diğer gelirler − giderler.</Text></View>
-      <View style={styles.grid}><Metric title="Beklenen aidat" value={money(monthExpected)} /><Metric title="Tahsil edilen" value={money(monthCollected)} /><Metric title="Bu ay kalan" value={money(monthRemaining)} /><Metric title="Bu ay gider" value={money(monthExpenses)} /></View>
+      <View style={styles.grid}><Metric title="Beklenen aidat" value={money(monthExpected)} /><Metric title="Tahsil edilen" value={money(monthCollected)} /><Metric title="Bu ay kalan" value={money(monthRemaining)} /><Metric title="Bu ay gider" value={money(monthExpenses)} /><Metric title="Diğer gelir" value={money(monthOtherIncome)} /><Metric title="Borçlu daire" value={String(debtorCount)} /></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Aidat durumu</Text><Text style={styles.bigNumber}>{paidCount} / {data.apartments.length} daire</Text><Text style={styles.muted}>{monthLabel(selectedMonth)} döneminde aidatını tamamen ödeyen daire</Text><View style={styles.track}><View style={[styles.progress, { width: (Math.min(100, monthExpected ? monthCollected / monthExpected * 100 : 0) + "%") as any }]} /></View><Text style={styles.muted}>{monthExpected ? Math.round(monthCollected / monthExpected * 100) : 0}% tahsilat</Text></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Toplam kalan borç</Text><Text style={styles.bigNumber}>{money(allDebt)}</Text><Text style={styles.muted}>Ödemeler önceki dönemlerin birikmiş borcunu da karşılar.</Text><Text style={styles.panelTitle}>Fazla ödeme bakiyesi</Text><Text style={styles.bigNumber}>{money(allCredit)}</Text><Text style={styles.muted}>Aidat borcunu aşan ödemeler sonraki dönemlere alacak olarak devreder.</Text></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Hızlı işlemler</Text><Action title="Daireleri ve ödemeleri görüntüle" onPress={() => setTab("apartments")} /><Action title="Yeni gider ekle" onPress={() => setTab("expenses")} /><Action title="Aidat tutarını ayarla" onPress={() => setTab("settings")} /></View>
