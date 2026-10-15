@@ -7,8 +7,7 @@ type Payment = { id: string; apartmentId: number; month: string; amount: number;
 type Expense = { id: string; title: string; amount: number; date: string; category?: string };
 type OtherIncome = { id: string; title: string; amount: number; date: string };
 type AuditEntry = { id: string; date: string; message: string };
-type Announcement = { id: string; title: string; body: string; date: string };
-type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string; incomes?: OtherIncome[]; openingBalance?: number; auditLog?: AuditEntry[]; announcements?: Announcement[] };
+type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string; incomes?: OtherIncome[]; openingBalance?: number; auditLog?: AuditEntry[] };
 type Tab = "home" | "apartments" | "expenses" | "settings";
 const STORAGE_KEY = "yesil-vadi-sitesi-v2";
 const monthNow = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
@@ -52,8 +51,6 @@ export default function App() {
   const [statementApartment, setStatementApartment] = useState<Apartment | null>(null);
   const [apartmentSearch, setApartmentSearch] = useState("");
   const [showDebtorsOnly, setShowDebtorsOnly] = useState(false);
-  const [announcementTitle, setAnnouncementTitle] = useState("");
-  const [announcementBody, setAnnouncementBody] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -62,7 +59,7 @@ export default function App() {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.apartments) && parsed.duesByMonth && Array.isArray(parsed.payments)) {
-            setData({ ...(parsed as Store), incomes: Array.isArray(parsed.incomes) ? parsed.incomes : [], announcements: Array.isArray(parsed.announcements) ? parsed.announcements : [], openingBalance: Number(parsed.openingBalance) || 0 });
+            setData({ ...(parsed as Store), incomes: Array.isArray(parsed.incomes) ? parsed.incomes : [], openingBalance: Number(parsed.openingBalance) || 0 });
             setOpeningBalanceInput(String(Number(parsed.openingBalance) || 0));
           } else {
             // Import earlier prototype data, preserving residents, expenses and recorded payments as far as possible.
@@ -120,38 +117,6 @@ export default function App() {
 
   const updateApartment = (id: number, patch: Partial<Apartment>) => setData(prev => ({ ...prev, apartments: prev.apartments.map(a => a.id === id ? { ...a, ...patch } : a) }));
   const appendAudit = (message: string) => setData(prev => ({ ...prev, auditLog: [{ id: Date.now().toString(), date: new Date().toISOString().slice(0, 10), message }, ...(prev.auditLog || [])] }));
-  const addAnnouncement = () => {
-    const title = announcementTitle.trim();
-    const body = announcementBody.trim();
-    if (!title || !body) {
-      Alert.alert("Eksik bilgi", "Lütfen duyuru başlığını ve açıklamasını doldurun.");
-      return;
-    }
-    const announcement: Announcement = {
-      id: Date.now().toString(),
-      title,
-      body,
-      date: new Date().toISOString().slice(0, 10)
-    };
-    setData(prev => ({ ...prev, announcements: [announcement, ...(prev.announcements || [])] }));
-    appendAudit("Duyuru yayımlandı: " + title + ".");
-    setAnnouncementTitle("");
-    setAnnouncementBody("");
-    Alert.alert("Duyuru yayımlandı", "Duyuru ana sayfaya eklendi.");
-  };
-  const removeAnnouncement = (announcement: Announcement) => {
-    Alert.alert("Duyuruyu sil", "“" + announcement.title + "” duyurusu silinsin mi?", [
-      { text: "Vazgeç", style: "cancel" },
-      {
-        text: "Sil",
-        style: "destructive",
-        onPress: () => {
-          setData(prev => ({ ...prev, announcements: (prev.announcements || []).filter(a => a.id !== announcement.id) }));
-          appendAudit("Duyuru silindi: " + announcement.title + ".");
-        }
-      }
-    ]);
-  };
   const addPayment = () => {
     const amount = Number(paymentAmount.replace(",", "."));
     if (!paymentApartment || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Geçersiz tutar", "Sıfırdan büyük bir ödeme tutarı girin."); return; }
@@ -272,10 +237,6 @@ export default function App() {
     <StatusBar barStyle="light-content" backgroundColor="#252b48" />
     {tab === "home" && <ScrollView contentContainerStyle={styles.content}>
       {header("Yönetim paneli", "Site gelir ve aidat özeti")}{monthPicker}
-      <View style={styles.panel}>
-        <View style={styles.summaryHeader}><Text style={styles.panelTitle}>📢 Site duyuruları</Text><Text style={styles.announcementCount}>{(data.announcements || []).length} duyuru</Text></View>
-        {!(data.announcements || []).length ? <Text style={styles.muted}>Henüz duyuru yok. Yönetici, Ayarlar bölümünden duyuru ekleyebilir.</Text> : (data.announcements || []).slice(0, 5).map(a => <View key={a.id} style={styles.announcementCard}><Text style={styles.announcementTitle}>{a.title}</Text><Text style={styles.announcementDate}>{a.date}</Text><Text style={styles.announcementBody}>{a.body}</Text></View>)}
-      </View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Güncel kasa bakiyesi</Text><Text style={styles.bigNumber}>{money(cashBalance)}</Text><Text style={styles.muted}>Açılış bakiyesi + aidat tahsilatları + diğer gelirler − giderler.</Text></View>
       <View style={styles.grid}><Metric title="Beklenen aidat" value={money(monthExpected)} /><Metric title="Tahsil edilen" value={money(monthCollected)} /><Metric title="Bu ay kalan" value={money(monthRemaining)} /><Metric title="Bu ay gider" value={money(monthExpenses)} /><Metric title="Diğer gelir" value={money(monthOtherIncome)} /><Metric title="Borçlu daire" value={String(debtorCount)} /></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Aidat durumu</Text><Text style={styles.bigNumber}>{paidCount} / {data.apartments.length} daire</Text><Text style={styles.muted}>{monthLabel(selectedMonth)} döneminde aidatını tamamen ödeyen daire</Text><View style={styles.track}><View style={[styles.progress, { width: (Math.min(100, monthExpected ? monthCollected / monthExpected * 100 : 0) + "%") as any }]} /></View><Text style={styles.muted}>{monthExpected ? Math.round(monthCollected / monthExpected * 100) : 0}% tahsilat</Text></View>
@@ -319,14 +280,6 @@ export default function App() {
       <View style={styles.panel}><Text style={styles.panelTitle}>Açılış kasa bakiyesi</Text><Text style={styles.muted}>Uygulamayı kullanmaya başladığında kasada bulunan mevcut tutarı gir.</Text><TextInput style={styles.input} value={openingBalanceInput} onChangeText={setOpeningBalanceInput} keyboardType="decimal-pad" placeholder="Örn. 5000" /><TouchableOpacity style={styles.primaryButton} onPress={saveOpeningBalance}><Text style={styles.primaryButtonText}>Açılış bakiyesini kaydet</Text></TouchableOpacity></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Aidat tutarını değiştir</Text><Text style={styles.muted}>Seçilen başlangıç ayından itibaren uygulanır; önceki ayların aidatı korunur.</Text><Text style={styles.fieldLabel}>Yeni aylık aidat (TL)</Text><TextInput style={styles.input} value={duesInput} onChangeText={setDuesInput} keyboardType="decimal-pad" placeholder="Örn. 750" /><Text style={styles.fieldLabel}>Başlangıç ayı (YYYY-AA)</Text><TextInput style={styles.input} value={duesMonthInput} onChangeText={setDuesMonthInput} placeholder="2026-11" autoCapitalize="none" /><TouchableOpacity style={styles.primaryButton} onPress={saveDues}><Text style={styles.primaryButtonText}>Aidat değişikliğini kaydet</Text></TouchableOpacity></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Aidat geçmişi</Text>{Object.keys(data.duesByMonth).sort().map(m => <View style={styles.listRow} key={m}><Text style={styles.apartmentName}>{monthLabel(m)} itibarıyla</Text><Text style={styles.due}>{money(data.duesByMonth[m])}</Text></View>)}</View>
-      <View style={styles.panel}><Text style={styles.panelTitle}>📢 Duyuru alanı</Text>
-        <Text style={styles.muted}>Duyuru başlığı ve açıklaması ekle. Yayımlanan duyurular ana sayfada görünür.</Text>
-        <Text style={styles.fieldLabel}>Duyuru başlığı</Text><TextInput style={styles.input} value={announcementTitle} onChangeText={setAnnouncementTitle} placeholder="Örn. Su kesintisi hakkında" maxLength={90} />
-        <Text style={styles.fieldLabel}>Duyuru açıklaması</Text><TextInput style={[styles.input, styles.announcementInput]} value={announcementBody} onChangeText={setAnnouncementBody} placeholder="Duyuru detaylarını yazın..." multiline textAlignVertical="top" maxLength={1000} />
-        <TouchableOpacity style={styles.primaryButton} onPress={addAnnouncement}><Text style={styles.primaryButtonText}>Duyuruyu yayımla</Text></TouchableOpacity>
-        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Yayımlanan duyurular</Text>
-        {!(data.announcements || []).length ? <Text style={styles.muted}>Henüz duyuru eklenmedi.</Text> : (data.announcements || []).map(a => <View key={a.id} style={styles.announcementManageRow}><View style={{ flex: 1 }}><Text style={styles.announcementTitle}>{a.title}</Text><Text style={styles.announcementDate}>{a.date}</Text><Text style={styles.announcementBody}>{a.body}</Text></View><TouchableOpacity style={styles.deleteButton} onPress={() => removeAnnouncement(a)}><Text style={styles.deleteButtonText}>Sil</Text></TouchableOpacity></View>)}
-      </View>
       <View style={styles.panel}><Text style={styles.panelTitle}>İşlem geçmişi</Text><Text style={styles.muted}>Aidat ve kasa kayıtlarında yapılan son değişiklikler.</Text>{!(data.auditLog || []).length ? <Text style={styles.muted}>Henüz kaydedilmiş değişiklik yok.</Text> : (data.auditLog || []).slice(0, 100).map(entry => <View style={styles.listRow} key={entry.id}><View style={{ flex: 1 }}><Text style={styles.apartmentName}>{entry.message}</Text><Text style={styles.muted}>{entry.date}</Text></View></View>)}</View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Uygulama bilgisi</Text><Text style={styles.muted}>• 20 daire tanımlıdır.</Text><Text style={styles.muted}>• Ödemeler ay bazında kaydedilir.</Text><Text style={styles.muted}>• Aidat değişikliği geçmiş ayların tutarını değiştirmez.</Text></View>
     </ScrollView>}
@@ -399,7 +352,7 @@ const styles = StyleSheet.create({
  input: { backgroundColor: "#fafaff", borderWidth: 1, borderColor: "#e0e3f0", borderRadius: 12, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10, color: "#252b48" },
  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 2 }, due: { color: "#5145b8", fontWeight: "800" }, debtLine: { color: "#596178", fontSize: 12, marginTop: 8 },
  statementButton: { backgroundColor: "#f0efff", borderRadius: 11, padding: 11, alignItems: "center", marginTop: 12, borderWidth: 1, borderColor: "#d9d5ff" }, statementButtonText: { color: "#5145b8", fontWeight: "800" },
- announcementCount: { color: "#7667e8", fontSize: 11, fontWeight: "800", marginBottom: 12 }, announcementCard: { backgroundColor: "#f8f7ff", borderRadius: 12, padding: 12, marginTop: 9, borderWidth: 1, borderColor: "#e5e1ff" }, announcementTitle: { color: "#252b48", fontSize: 14, fontWeight: "900" }, announcementDate: { color: "#858ba0", fontSize: 10, marginTop: 4 }, announcementBody: { color: "#4d536b", fontSize: 13, lineHeight: 19, marginTop: 7 }, announcementInput: { minHeight: 100, paddingTop: 12 }, announcementManageRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#eff0f7" },
+
  statementModal: { maxHeight: "88%" }, statementScroll: { marginTop: 8, marginBottom: 12 }, statementTotals: { flexDirection: "row", gap: 8, marginTop: 14 }, statementTotalBox: { flex: 1, backgroundColor: "#f7f7ff", borderRadius: 12, padding: 10, borderWidth: 1, borderColor: "#e7e9f2" }, statementTotalLabel: { color: "#737b91", fontSize: 11, fontWeight: "700" }, statementTotalValue: { color: "#252b48", fontSize: 14, fontWeight: "900", marginTop: 5 }, statementBalanceBox: { backgroundColor: "#f8fafc", borderRadius: 12, padding: 12, marginTop: 8, borderWidth: 1, borderColor: "#e7e9f2" }, statementBalanceValue: { fontSize: 20, fontWeight: "900", marginTop: 4 }, statementSectionTitle: { color: "#252b48", fontSize: 13, fontWeight: "900", marginTop: 15 }, statementRow: { flexDirection: "row", alignItems: "center", paddingVertical: 11, borderTopWidth: 1, borderTopColor: "#eff0f7", gap: 8 }, statementAmount: { fontSize: 12, fontWeight: "900", marginTop: 5 }, statementRunningBalance: { fontSize: 12, fontWeight: "900", marginTop: 3 }, statementStatus: { fontSize: 10, fontWeight: "900", marginTop: 2 },
  filterButton: { backgroundColor: "#f0efff", borderRadius: 10, padding: 12, alignItems: "center", borderWidth: 1, borderColor: "#d9d5ff" }, filterButtonText: { color: "#5145b8", fontWeight: "800" },
  smallButton: { backgroundColor: "#5b4dc8", borderRadius: 11, padding: 12, alignItems: "center", marginTop: 12 }, smallButtonText: { color: "#fff", fontWeight: "800" },
