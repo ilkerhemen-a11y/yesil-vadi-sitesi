@@ -70,15 +70,25 @@ export default function App() {
     const effective = Object.keys(data.duesByMonth).filter(m => m <= month).sort();
     return effective.length ? data.duesByMonth[effective[effective.length - 1]] : 0;
   };
-  const paymentsFor = (apartmentId: number, month: string) => data.payments.filter(p => p.apartmentId === apartmentId && p.month === month).reduce((s, p) => s + p.amount, 0);
+  const paymentsFor = (apartmentId: number, month: string) => data.payments.filter(p => p.apartmentId === apartmentId && p.month === month).reduce((sum, p) => sum + p.amount, 0);
   const monthDues = getDues(selectedMonth);
-  const monthExpected = data.apartments.length * monthDues;
-  const monthCollected = data.payments.filter(p => p.month === selectedMonth).reduce((s, p) => s + p.amount, 0);
-  const monthRemaining = Math.max(0, monthExpected - monthCollected);
-  const totalExpenses = data.expenses.reduce((s, e) => s + e.amount, 0);
   const monthList = monthsBetween(data.startMonth, selectedMonth);
-  const allDebt = data.apartments.reduce((sum, a) => sum + monthList.reduce((inner, m) => inner + Math.max(0, getDues(m) - paymentsFor(a.id, m)), 0), 0);
-  const paidCount = data.apartments.filter(a => paymentsFor(a.id, selectedMonth) >= monthDues && monthDues > 0).length;
+  const duesThrough = (month: string) => monthsBetween(data.startMonth, month).reduce((sum, m) => sum + getDues(m), 0);
+  const paidThrough = (apartmentId: number, month: string) => data.payments.filter(p => p.apartmentId === apartmentId && p.month <= month).reduce((sum, p) => sum + p.amount, 0);
+  const balanceFor = (apartmentId: number, month: string) => {
+    const due = duesThrough(month);
+    const paid = paidThrough(apartmentId, month);
+    return { debt: Math.max(0, due - paid), credit: Math.max(0, paid - due) };
+  };
+  const monthExpected = data.apartments.length * monthDues;
+  const monthCollected = data.payments.filter(p => p.month === selectedMonth).reduce((sum, p) => sum + p.amount, 0);
+  const previousMonth = shiftMonth(selectedMonth, -1);
+  const previousDues = duesThrough(previousMonth);
+  const monthRemaining = data.apartments.reduce((sum, a) => sum + Math.max(0, monthDues - Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - previousDues))), 0);
+  const totalExpenses = data.expenses.reduce((sum, e) => sum + e.amount, 0);
+  const allDebt = data.apartments.reduce((sum, a) => sum + balanceFor(a.id, selectedMonth).debt, 0);
+  const allCredit = data.apartments.reduce((sum, a) => sum + balanceFor(a.id, selectedMonth).credit, 0);
+  const paidCount = data.apartments.filter(a => Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - previousDues)) >= monthDues && monthDues > 0).length;
 
   const updateApartment = (id: number, patch: Partial<Apartment>) => setData(prev => ({ ...prev, apartments: prev.apartments.map(a => a.id === id ? { ...a, ...patch } : a) }));
   const addPayment = () => {
@@ -132,16 +142,16 @@ export default function App() {
       {header("Yönetim paneli", "Site gelir ve aidat özeti")}{monthPicker}
       <View style={styles.grid}><Metric title="Beklenen aidat" value={money(monthExpected)} /><Metric title="Tahsil edilen" value={money(monthCollected)} /><Metric title="Bu ay kalan" value={money(monthRemaining)} /><Metric title="Toplam gider" value={money(totalExpenses)} /></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Aidat durumu</Text><Text style={styles.bigNumber}>{paidCount} / {data.apartments.length} daire</Text><Text style={styles.muted}>{monthLabel(selectedMonth)} döneminde aidatını tamamen ödeyen daire</Text><View style={styles.track}><View style={[styles.progress, { width: (Math.min(100, monthExpected ? monthCollected / monthExpected * 100 : 0) + "%") as any }]} /></View><Text style={styles.muted}>{monthExpected ? Math.round(monthCollected / monthExpected * 100) : 0}% tahsilat</Text></View>
-      <View style={styles.panel}><Text style={styles.panelTitle}>Devreden borç özeti</Text><Text style={styles.bigNumber}>{money(allDebt)}</Text><Text style={styles.muted}>Başlangıç ayından seçili aya kadar kalan aidat borçları toplamı</Text></View>
+      <View style={styles.panel}><Text style={styles.panelTitle}>Toplam kalan borç</Text><Text style={styles.bigNumber}>{money(allDebt)}</Text><Text style={styles.muted}>Ödemeler önceki dönemlerin birikmiş borcunu da karşılar.</Text><Text style={styles.panelTitle}>Fazla ödeme bakiyesi</Text><Text style={styles.bigNumber}>{money(allCredit)}</Text><Text style={styles.muted}>Aidat borcunu aşan ödemeler sonraki dönemlere alacak olarak devreder.</Text></View>
       <View style={styles.panel}><Text style={styles.panelTitle}>Hızlı işlemler</Text><Action title="Daireleri ve ödemeleri görüntüle" onPress={() => setTab("apartments")} /><Action title="Yeni gider ekle" onPress={() => setTab("expenses")} /><Action title="Aidat tutarını ayarla" onPress={() => setTab("settings")} /></View>
     </ScrollView>}
     {tab === "apartments" && <ScrollView contentContainerStyle={styles.content}>
       {header("Daireler", "Daire bazında aylık borç ve ödeme takibi")}{monthPicker}
-      {data.apartments.map(a => { const paid = paymentsFor(a.id, selectedMonth); const remaining = Math.max(0, monthDues - paid); const debt = monthList.reduce((s, m) => s + Math.max(0, getDues(m) - paymentsFor(a.id, m)), 0); return <View style={styles.apartment} key={a.id}>
+      {data.apartments.map(a => { const paid = paymentsFor(a.id, selectedMonth); const balance = balanceFor(a.id, selectedMonth); const remaining = Math.max(0, monthDues - Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - duesThrough(shiftMonth(selectedMonth, -1))))); const debt = balance.debt; return <View style={styles.apartment} key={a.id}>
         <View style={styles.apartmentTop}><Text style={styles.apartmentName}>Daire {String(a.id).padStart(2, "0")}</Text><Text style={[styles.badge, { backgroundColor: remaining === 0 ? "#dcfce7" : "#fef3c7", color: remaining === 0 ? "#166534" : "#92400e" }]}>{remaining === 0 ? "Ödendi" : "Borç var"}</Text></View>
         <TextInput style={styles.input} value={a.resident} placeholder="Daire sakini (isteğe bağlı)" onChangeText={v => updateApartment(a.id, { resident: v })} />
         <View style={styles.row}><Text style={styles.muted}>Bu ay ödenen: {money(paid)}</Text><Text style={styles.due}>Bu ay kalan: {money(remaining)}</Text></View>
-        <Text style={styles.debtLine}>Seçili aya kadar toplam kalan aidat: {money(debt)}</Text>
+        <Text style={styles.debtLine}>Seçili aya kadar toplam kalan aidat: {money(debt)}</Text>{balance.credit > 0 && <Text style={styles.creditLine}>Sonraki aya devreden fazla ödeme: {money(balance.credit)}</Text>}
         <TouchableOpacity style={styles.smallButton} onPress={() => { setPaymentApartment(a); setPaymentAmount(""); }}><Text style={styles.smallButtonText}>Bu aya ödeme ekle</Text></TouchableOpacity>
         {data.payments.filter(p => p.apartmentId === a.id && p.month === selectedMonth).length > 0 && <View style={styles.history}><Text style={styles.historyTitle}>Ödeme hareketleri</Text>{data.payments.filter(p => p.apartmentId === a.id && p.month === selectedMonth).map(p => <View style={styles.paymentHistoryRow} key={p.id}><View style={{ flex: 1 }}><Text style={styles.muted}>{p.date}</Text><Text style={styles.paymentAmount}>{money(p.amount)}</Text></View><TouchableOpacity style={styles.editButton} onPress={() => openEditPayment(p)}><Text style={styles.editButtonText}>Düzenle</Text></TouchableOpacity><TouchableOpacity style={styles.deleteButton} onPress={() => deletePayment(p)}><Text style={styles.deleteButtonText}>Sil</Text></TouchableOpacity></View>)}</View>}
       </View>; })}
@@ -172,6 +182,7 @@ const styles = StyleSheet.create({
  action: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, borderTopWidth: 1, borderTopColor: "#edf2ed" }, actionText: { color: "#166534", fontWeight: "700", fontSize: 14 }, actionArrow: { color: "#16a34a", fontSize: 25 },
  apartment: { backgroundColor: "#fff", borderRadius: 15, padding: 14, marginBottom: 11, borderWidth: 1, borderColor: "#e2e8e2" }, apartmentTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }, apartmentName: { color: "#172b20", fontWeight: "800", fontSize: 15 }, badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, overflow: "hidden", fontSize: 11, fontWeight: "800" }, input: { backgroundColor: "#f8faf8", borderWidth: 1, borderColor: "#dbe5db", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 9, color: "#172b20" }, row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 2 }, due: { color: "#166534", fontWeight: "800" }, debtLine: { color: "#475569", fontSize: 12, marginTop: 8 }, smallButton: { backgroundColor: "#166534", borderRadius: 9, padding: 10, alignItems: "center", marginTop: 12 }, smallButtonText: { color: "#fff", fontWeight: "800" }, history: { marginTop: 12, borderTopWidth: 1, borderTopColor: "#edf2ed", paddingTop: 8 }, historyTitle: { color: "#334155", fontWeight: "700", fontSize: 12 },
  paymentHistoryRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#edf2ed" }, paymentAmount: { color: "#166534", fontWeight: "800", marginTop: 2 }, editButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 7, backgroundColor: "#e0f2fe" }, editButtonText: { color: "#075985", fontSize: 11, fontWeight: "800" }, deleteButton: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 7, backgroundColor: "#fee2e2" }, deleteButtonText: { color: "#b91c1c", fontSize: 11, fontWeight: "800" },
+ creditLine: { color: "#0369a1", fontSize: 12, fontWeight: "800", marginTop: 7 },
  primaryButton: { backgroundColor: "#166534", padding: 13, borderRadius: 10, alignItems: "center", marginTop: 2 }, primaryButtonText: { color: "#fff", fontWeight: "800" }, fieldLabel: { color: "#334155", fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 8 }, listRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#edf2ed" },
  modalShade: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "center", padding: 20 }, modalCard: { backgroundColor: "#fff", borderRadius: 18, padding: 18, elevation: 8 }, cancelButton: { padding: 12, alignItems: "center", marginTop: 4 }, cancelButtonText: { color: "#64748b", fontWeight: "700" },
  nav: { flexDirection: "row", backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#dbe5db", paddingTop: 9, paddingBottom: 8, justifyContent: "space-around" }, navItem: { alignItems: "center", minWidth: 62 }, navIcon: { fontSize: 20, color: "#64748b" }, navLabel: { color: "#64748b", fontSize: 10, marginTop: 2 }, navActive: { color: "#166534", fontWeight: "900" }
