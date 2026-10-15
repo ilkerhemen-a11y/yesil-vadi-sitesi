@@ -35,6 +35,10 @@ export default function App() {
   const [paymentApartment, setPaymentApartment] = useState<Apartment | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editExpenseTitle, setEditExpenseTitle] = useState("");
+  const [editExpenseAmount, setEditExpenseAmount] = useState("");
+  const [editExpenseDate, setEditExpenseDate] = useState("");
   const [editPaymentAmount, setEditPaymentAmount] = useState("");
   const [editPaymentDate, setEditPaymentDate] = useState("");
   const [duesInput, setDuesInput] = useState("600");
@@ -131,6 +135,23 @@ export default function App() {
     Alert.alert("Ödemeyi sil", "Bu ödeme kaydı kalıcı olarak silinsin mi?", [
       { text: "Vazgeç", style: "cancel" },
       { text: "Sil", style: "destructive", onPress: () => setData(prev => ({ ...prev, payments: prev.payments.filter(p => p.id !== payment.id) })) }
+    ]);
+  };
+  const openEditExpense = (expense: Expense) => {
+    setEditingExpense(expense); setEditExpenseTitle(expense.title); setEditExpenseAmount(String(expense.amount)); setEditExpenseDate(expense.date);
+  };
+  const saveEditedExpense = () => {
+    const amount = Number(editExpenseAmount.replace(",", "."));
+    if (!editingExpense || !editExpenseTitle.trim() || !Number.isFinite(amount) || amount <= 0 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(editExpenseDate)) {
+      Alert.alert("Bilgileri kontrol edin", "Gider adı, pozitif tutar ve YYYY-AA-GG biçiminde tarih girin."); return;
+    }
+    setData(prev => ({ ...prev, expenses: prev.expenses.map(e => e.id === editingExpense.id ? { ...e, title: editExpenseTitle.trim(), amount, date: editExpenseDate } : e) }));
+    setEditingExpense(null); Alert.alert("Güncellendi", "Gider kaydı düzenlendi.");
+  };
+  const deleteExpense = (expense: Expense) => {
+    Alert.alert("Gideri sil", "Bu gider kaydı silinsin mi?", [
+      { text: "Vazgeç", style: "cancel" },
+      { text: "Sil", style: "destructive", onPress: () => setData(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== expense.id) })) }
     ]);
   };
   const addExpense = () => {
