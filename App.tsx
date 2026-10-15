@@ -13,7 +13,7 @@ const monthNow = () => { const d = new Date(); return d.getFullYear() + "-" + St
 const thisMonth = monthNow();
 const initialData: Store = {
   apartments: Array.from({ length: 20 }, (_, i) => ({ id: i + 1, resident: "" })),
-  duesByMonth: { [thisMonth]: 600 }, payments: [], expenses: [], startMonth: thisMonth
+  duesByMonth: { [thisMonth]: 600 }, payments: [], expenses: [], incomes: [], openingBalance: 0, startMonth: thisMonth
 };
 const money = (n: number) => n.toLocaleString("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 2 });
 const monthLabel = (month: string) => { const [y, m] = month.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); };
