@@ -7,7 +7,8 @@ type Payment = { id: string; apartmentId: number; month: string; amount: number;
 type Expense = { id: string; title: string; amount: number; date: string; category?: string };
 type OtherIncome = { id: string; title: string; amount: number; date: string };
 type AuditEntry = { id: string; date: string; message: string };
-type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string; incomes?: OtherIncome[]; openingBalance?: number; auditLog?: AuditEntry[] };
+type Announcement = { id: string; title: string; body: string; date: string };
+type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string; incomes?: OtherIncome[]; openingBalance?: number; auditLog?: AuditEntry[]; announcements?: Announcement[] };
 type Tab = "home" | "apartments" | "expenses" | "settings";
 const STORAGE_KEY = "yesil-vadi-sitesi-v2";
 const monthNow = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
@@ -51,6 +52,8 @@ export default function App() {
   const [statementApartment, setStatementApartment] = useState<Apartment | null>(null);
   const [apartmentSearch, setApartmentSearch] = useState("");
   const [showDebtorsOnly, setShowDebtorsOnly] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -59,7 +62,7 @@ export default function App() {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.apartments) && parsed.duesByMonth && Array.isArray(parsed.payments)) {
-            setData({ ...(parsed as Store), incomes: Array.isArray(parsed.incomes) ? parsed.incomes : [], openingBalance: Number(parsed.openingBalance) || 0 });
+            setData({ ...(parsed as Store), incomes: Array.isArray(parsed.incomes) ? parsed.incomes : [], announcements: Array.isArray(parsed.announcements) ? parsed.announcements : [], openingBalance: Number(parsed.openingBalance) || 0 });
             setOpeningBalanceInput(String(Number(parsed.openingBalance) || 0));
           } else {
             // Import earlier prototype data, preserving residents, expenses and recorded payments as far as possible.
@@ -117,6 +120,38 @@ export default function App() {
 
   const updateApartment = (id: number, patch: Partial<Apartment>) => setData(prev => ({ ...prev, apartments: prev.apartments.map(a => a.id === id ? { ...a, ...patch } : a) }));
   const appendAudit = (message: string) => setData(prev => ({ ...prev, auditLog: [{ id: Date.now().toString(), date: new Date().toISOString().slice(0, 10), message }, ...(prev.auditLog || [])] }));
+  const addAnnouncement = () => {
+    const title = announcementTitle.trim();
+    const body = announcementBody.trim();
+    if (!title || !body) {
+      Alert.alert("Eksik bilgi", "Lütfen duyuru başlığını ve açıklamasını doldurun.");
+      return;
+    }
+    const announcement: Announcement = {
+      id: Date.now().toString(),
+      title,
+      body,
+      date: new Date().toISOString().slice(0, 10)
+    };
+    setData(prev => ({ ...prev, announcements: [announcement, ...(prev.announcements || [])] }));
+    appendAudit("Duyuru yayımlandı: " + title + ".");
+    setAnnouncementTitle("");
+    setAnnouncementBody("");
+    Alert.alert("Duyuru yayımlandı", "Duyuru ana sayfaya eklendi.");
+  };
+  const removeAnnouncement = (announcement: Announcement) => {
+    Alert.alert("Duyuruyu sil", "“" + announcement.title + "” duyurusu silinsin mi?", [
+      { text: "Vazgeç", style: "cancel" },
+      {
+        text: "Sil",
+        style: "destructive",
+        onPress: () => {
+          setData(prev => ({ ...prev, announcements: (prev.announcements || []).filter(a => a.id !== announcement.id) }));
+          appendAudit("Duyuru silindi: " + announcement.title + ".");
+        }
+      }
+    ]);
+  };
   const addPayment = () => {
     const amount = Number(paymentAmount.replace(",", "."));
     if (!paymentApartment || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Geçersiz tutar", "Sıfırdan büyük bir ödeme tutarı girin."); return; }
