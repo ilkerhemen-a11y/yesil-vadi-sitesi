@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type Apartment = { id: number; resident: string };
 type Payment = { id: string; apartmentId: number; month: string; amount: number; date: string };
 type Expense = { id: string; title: string; amount: number; date: string };
+type OtherIncome = { id: string; title: string; amount: number; date: string };
 type Store = { apartments: Apartment[]; duesByMonth: Record<string, number>; payments: Payment[]; expenses: Expense[]; startMonth: string };
 type Tab = "home" | "apartments" | "expenses" | "settings";
 const STORAGE_KEY = "yesil-vadi-sitesi-v2";
