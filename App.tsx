@@ -116,6 +116,7 @@ export default function App() {
   const paidCount = data.apartments.filter(a => Math.min(monthDues, Math.max(0, paidThrough(a.id, selectedMonth) - previousDues)) >= monthDues && monthDues > 0).length;
 
   const updateApartment = (id: number, patch: Partial<Apartment>) => setData(prev => ({ ...prev, apartments: prev.apartments.map(a => a.id === id ? { ...a, ...patch } : a) }));
+  const appendAudit = (message: string) => setData(prev => ({ ...prev, auditLog: [{ id: Date.now().toString(), date: new Date().toISOString().slice(0, 10), message }, ...(prev.auditLog || [])] }));
   const addPayment = () => {
     const amount = Number(paymentAmount.replace(",", "."));
     if (!paymentApartment || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Geçersiz tutar", "Sıfırdan büyük bir ödeme tutarı girin."); return; }
