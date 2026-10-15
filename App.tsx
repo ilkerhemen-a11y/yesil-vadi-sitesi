@@ -27,6 +27,9 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState(thisMonth);
   const [expenseTitle, setExpenseTitle] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
+  const [incomeTitle, setIncomeTitle] = useState("");
+  const [incomeAmount, setIncomeAmount] = useState("");
+  const [openingBalanceInput, setOpeningBalanceInput] = useState("0");
   const [paymentApartment, setPaymentApartment] = useState<Apartment | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
