@@ -137,6 +137,20 @@ export default function App() {
     setData(prev => ({ ...prev, expenses: [{ id: Date.now().toString(), title: expenseTitle.trim(), amount, date: new Date().toISOString().slice(0, 10) }, ...prev.expenses] }));
     setExpenseTitle(""); setExpenseAmount(""); Alert.alert("Kaydedildi", "Gider kaydı eklendi.");
   };
+  const addIncome = () => {
+    const amount = Number(incomeAmount.replace(",", "."));
+    if (!incomeTitle.trim() || !Number.isFinite(amount) || amount <= 0) { Alert.alert("Bilgileri kontrol edin", "Gelir açıklaması ve sıfırdan büyük tutar girin."); return; }
+    setData(prev => ({ ...prev, incomes: [{ id: Date.now().toString(), title: incomeTitle.trim(), amount, date: new Date().toISOString().slice(0, 10) }, ...(prev.incomes || [])] }));
+    setIncomeTitle(""); setIncomeAmount(""); Alert.alert("Kaydedildi", "Diğer gelir kaydı eklendi.");
+  };
+  const saveOpeningBalance = () => {
+    const amount = Number(openingBalanceInput.replace(",", "."));
+    if (!Number.isFinite(amount) || amount < 0) { Alert.alert("Geçersiz tutar", "Açılış kasa bakiyesi sıfır veya daha büyük olmalıdır."); return; }
+    Alert.alert("Açılış bakiyesini kaydet", "Açılış kasası " + money(amount) + " olarak kaydedilecek.", [
+      { text: "Vazgeç", style: "cancel" },
+      { text: "Kaydet", onPress: () => setData(prev => ({ ...prev, openingBalance: amount })) }
+    ]);
+  };
   const saveDues = () => {
     const amount = Number(duesInput.replace(",", "."));
     if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}$/.test(duesMonthInput)) { Alert.alert("Bilgileri kontrol edin", "Geçerli bir aidat tutarı ve YYYY-AA biçiminde başlangıç ayı girin."); return; }
