@@ -273,8 +273,8 @@ function Action({ title, onPress }: { title: string; onPress: () => void }) { re
 function NavItem({ label, icon, active, onPress }: { label: string; icon: string; active: boolean; onPress: () => void }) { return <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: active }} style={[styles.navItem, active && styles.navItemActive]} onPress={onPress}><Text style={[styles.navIcon, active && styles.navIconActive]}>{icon}</Text><Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>{active && <View style={styles.navDot} />}</TouchableOpacity>; }
 const styles = StyleSheet.create({
  safe: { flex: 1, backgroundColor: "#f4f6fb" },
- topSafeSpace: { height: 8, backgroundColor: "#f4f6fb" },
- content: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 30 },
+ topSafeSpace: { height: 16, backgroundColor: "#f4f6fb" },
+ content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 30 },
  header: { backgroundColor: "#252b48", borderRadius: 22, padding: 21, marginBottom: 14, borderWidth: 1, borderColor: "#343b5c", elevation: 3 },
  brand: { color: "#bdb5ff", fontSize: 11, fontWeight: "900", letterSpacing: 1.8, marginBottom: 12 },
  pageTitle: { color: "#ffffff", fontSize: 25, fontWeight: "900", letterSpacing: -0.4 },
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
  primaryButton: { backgroundColor: "#5b4dc8", padding: 14, borderRadius: 12, alignItems: "center", marginTop: 2, elevation: 1 }, primaryButtonText: { color: "#fff", fontWeight: "800" },
  fieldLabel: { color: "#414761", fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 8 }, listRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#eff0f7" },
  modalShade: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, backgroundColor: "rgba(24, 28, 52, 0.48)", justifyContent: "center", padding: 20 }, modalCard: { backgroundColor: "#fff", borderRadius: 18, padding: 18, elevation: 8 }, cancelButton: { padding: 12, alignItems: "center", marginTop: 4 }, cancelButtonText: { color: "#737b91", fontWeight: "700" },
- nav: { flexDirection: "row", backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#e7e9f2", paddingTop: 10, paddingBottom: 12, paddingHorizontal: 7, justifyContent: "space-around", alignItems: "center", elevation: 12, minHeight: 76 },
+ nav: { flexDirection: "row", backgroundColor: "#fff", borderWidth: 1, borderColor: "#e7e9f2", paddingTop: 8, paddingBottom: 8, paddingHorizontal: 7, justifyContent: "space-around", alignItems: "center", elevation: 12, minHeight: 72, marginHorizontal: 8, marginBottom: 10, borderRadius: 18 },
  navItem: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 62, marginHorizontal: 3, borderRadius: 14, paddingTop: 7, paddingBottom: 5 }, navItemActive: { backgroundColor: "#f0efff" },
  navIcon: { fontSize: 23, color: "#9aa0b2", fontWeight: "700" }, navIconActive: { color: "#5b4dc8" }, navLabel: { color: "#858ba0", fontSize: 11, fontWeight: "600", marginTop: 4 }, navLabelActive: { color: "#5145b8", fontWeight: "900" }, navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#7667e8", marginTop: 2 }
 });
