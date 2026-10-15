@@ -59,3 +59,5 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+# Manual build requested on 2026-10-15.
