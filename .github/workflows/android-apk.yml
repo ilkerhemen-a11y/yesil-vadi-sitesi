@@ -8,6 +8,7 @@ on:
     paths:
       - "App.tsx"
       - "app.json"
+      - "assets/icon.svg"
       - "package.json"
       - "package-lock.json"
       - "tsconfig.json"
@@ -41,6 +42,9 @@ jobs:
 
       - name: Install JavaScript dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Generate app icon PNG from SVG artwork
+        run: npx --yes sharp-cli -i assets/icon.svg -o assets/icon.png resize 1024 1024
 
       - name: TypeScript check
         run: npm run typecheck
